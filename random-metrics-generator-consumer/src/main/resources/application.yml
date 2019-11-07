@@ -1,0 +1,35 @@
+server:
+  port: 8081
+  
+consumer:
+      messaging:
+            work:
+                queue: queue.metrics.work
+                exchange: x.metrics.work
+                routing: routing.metrics.work
+    
+spring:
+    rabbitmq:
+          host: localhost
+          port: 5672
+          username: metricsGenerator
+          password: admin@123  
+          listener:
+              simple:
+               retry:                  enabled: true
+                  max-attempts: 2
+                  initial-interval: 3s
+                  max-interval: 5s
+                  multiplier: 1
+    datasource:
+        url: jdbc:mysql://localhost:3306/metrics_db?serverTimezone=UTC&useSSL=false
+        username: root
+        password: password
+        driver-class-name: com.mysql.cj.jdbc.Driver
+    jpa:
+        hibernate:
+            ddl-auto: update  
+        properties:
+          hibernate:
+            dialect:  org.hibernate.dialect.MySQL8Dialect
+

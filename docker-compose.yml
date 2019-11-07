@@ -1,0 +1,89 @@
+version: '3.7'
+
+services:
+
+  rabbitmq:
+    image: rabbitmq:management
+    ports:
+      - 5672:5672
+      - 15672:15672
+    tty:
+      true
+    volumes:
+      - ./data:/var/lib/rabbitmq:rw
+      - ./definitions.json:/opt/definitions.json:ro
+      - ./rabbitmq.config:/etc/rabbitmq/rabbitmq.config:ro
+    networks:
+      - backend
+  
+  jenkins:
+    image: jenkins
+    ports:
+      - 50000:50000      
+      - 8082:8082
+    networks:
+      - backend
+    environment:
+      - JENKINS_OPTS="--prefix=/jenkins"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - jenkins_home:/var/jenkins_home
+  
+  producer:
+    build: 
+      context: random-metrics-generator-producer
+      dockerfile: Dockerfile
+    depends_on:
+    - rabbitmq
+    - db
+    ports:
+      - 8080:8080
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+    tty: true
+    networks:
+      - backend
+      
+  consumer:
+    build: 
+      context: random-metrics-generator-consumer
+      dockerfile: Dockerfile
+    depends_on:
+    - rabbitmq
+    - db
+    - producer
+    ports:
+      - 8081:8081
+    environment:
+      SPRING_RABBITMQ_HOST: rabbitmq
+      SPRING_DATASOURCE_URL: jdbc:mysql://db:3306/metrics_db?useSSL=false&serverTimezone=UTC&useLegacyDatetimeCode=false&allowPublicKeyRetrieval=true
+      SPRING_DATASOURCE_USERNAME: admin
+      SPRING_DATASOURCE_PASSWORD: admin@123
+    tty: true
+    networks:
+      - backend 
+   
+  db:
+    image: mysql:8.0
+    restart: always
+    environment:
+      MYSQL_DATABASE: 'metrics_db'
+      MYSQL_USER: 'admin'
+      MYSQL_PASSWORD: 'admin@123'
+      MYSQL_ROOT_PASSWORD: 'password'
+      MYSQL_ROOT_HOST: '%'
+    ports:
+      - '3306:3306'
+    expose:
+      - '3306'
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - backend  
+      
+volumes:
+  db_data: {}
+  jenkins_home: {}
+  
+networks:
+  backend:

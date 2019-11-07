@@ -1,0 +1,16 @@
+spring:
+    rabbitmq:
+         host: localhost
+         port: 5672
+         username: metricsGenerator
+         password: admin@123
+    
+server:
+    port: 8080
+  
+producer:
+    exchange: x.metrics.work
+    routing: routing.metrics.work
+    
+
+    
